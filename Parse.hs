@@ -11,8 +11,13 @@ import System.Process
 import qualified Data.Map.Strict as M
 import qualified Data.List as L
 
-type DrawMats = (Screen, T.Transform Double, [Vect Double])
 type Args = [String]
+data DrawMats =
+    DrawMats { getScreen :: Screen
+             , getTransform :: T.Transform Double
+             , getEdges :: [Vect Double]
+             , getTriangles :: [S.Triangle Double]
+             }
 
 noArgs :: (MonadState DrawMats m, MonadIO m) => [(String, m ())]
 noArgs = [ ("ident", ident)
@@ -159,3 +164,17 @@ clear = modify $
 apply :: (MonadState DrawMats m) => m ()
 apply = modify $
     \(scrn, tform, edges) -> (scrn, tform, T.mmult tform edges)
+
+modScreen :: (Screen -> Screen) -> DrawMats -> DrawMats
+modScreen f dm = dm { getScreen = (f $ getScreen dm) }
+
+modTransform :: (T.Transform Double -> T.Transform Double) ->
+    DrawMats -> DrawMats
+modTransform f dm = dm { getTransform = (f $ getTransform dm) }
+
+modEdges :: ([Vect Double] -> [Vect Double]) -> DrawMats -> DrawMats
+modedges f dm = dm { getEdges = (f $ getEdges dm) }
+
+modTriangles :: ([S.Triangle Double] -> [S.Triangle Double]) ->
+    DrawMats -> DrawMats
+modTriangles f dm = dm { getTriangles = (f $ getTriangles dm) }
