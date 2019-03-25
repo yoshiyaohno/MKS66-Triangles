@@ -4,24 +4,24 @@ import Line
 import Transform
 import qualified Data.List as L
 
---stitch4 :: Vect a -> Vect a -> Vect a -> Vect a -> [Line a]
+newtype Triangle a = Triangle (Vect a, Vect a, Vect a)
 
-box :: (Floating a, Enum a) => a -> a -> a -> a -> a -> a -> [Vect a]
-box cx cy cz w h d =
+-- these four points go clockwise to face the normal into you
+stitch4 :: Vect t -> Vect t -> Vect t -> Vect t -> [Triangle t]
+stitch4 a b c d = [Triangle (a, b, c), Triangle (a, c, d)]
+
+box :: (Floating a, Enum a) => a -> a -> a -> a -> a -> a -> [Triangle a]
+box cx cy cz w h d = let
+    [p000, p001, p010, p011, p100, p101, p110, p111] = 
+        [Vect (cx + qx * w) (cy + qy * h) (cz + qz * d) 1
+            | qx <- [0,1], qy <- [0,1], qz <- [0,1]]
+                in stitch4 p000 p010 p110 p100
+                   ++ stitch4 p100 p110 p111 p101
+                   ++ stitch4 p111 p011 p001 p101
+                   ++ stitch4 p110 p010 p000 p001
+                   ++ stitch4 p011 p111 p110 p010
+                   ++ stitch4 p000 p100 p101 p001
     -- y a h o o
-    [ Vect cx cy cz 1, Vect (cx + w) cy cz 1
-    , Vect cx cy cz 1, Vect cx (cy + h) cz 1
-    , Vect cx (cy + h) cz 1, Vect (cx + w) (cy + h) cz 1
-    , Vect (cx + w) cy cz 1, Vect (cx + w) (cy + h) cz 1
-    , Vect cx cy cz 1, Vect cx cy (cz + d) 1
-    , Vect cx (cy + h) cz 1, Vect cx (cy + h) (cz + d) 1
-    , Vect (cx + w) cy cz 1, Vect (cx + w) cy (cz + d) 1
-    , Vect (cx + w) (cy + h) cz 1, Vect (cx + w) (cy + h) (cz + d) 1
-    , Vect cx cy (cz + d) 1, Vect (cx + w) cy (cz + d) 1
-    , Vect cx cy (cz + d) 1, Vect cx (cy + h) (cz + d) 1
-    , Vect cx (cy + h) (cz + d) 1, Vect (cx + w) (cy + h) (cz + d) 1
-    , Vect (cx + w) cy (cz + d) 1, Vect (cx + w) (cy + h) (cz + d) 1
-    ]
 
 sphere :: (Floating a, Enum a) => a -> a -> a -> a -> [Vect a]
 sphere cx cy cz r =
