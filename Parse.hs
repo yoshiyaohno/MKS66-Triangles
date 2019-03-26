@@ -19,6 +19,13 @@ data DrawMats =
              , getTriangles :: [S.Triangle Double]
              }
 
+emptyDM :: DrawMats
+emptyDM = DrawMats { getScreen = M.empty
+                   , getTransform = T.ident
+                   , getEdges = []
+                   , getTriangles = []
+                   }
+
 noArgs :: (MonadState DrawMats m, MonadIO m) => [(String, m ())]
 noArgs = [ ("ident", ident)
          , ("apply", apply)
@@ -35,16 +42,16 @@ wArgs = [ ("save", save)
         , ("hermite", hermite)
         , ("bezier", bezier)
         , ("circle", circle)
-        , ("sphere", sphere)
-        , ("torus", torus)
-        , ("box", box)
+--      , ("sphere", sphere)
+--      , ("torus", torus)
+--      , ("box", box)
         ]
 
 main = do
     args <- getArgs
     script <- readFile (head args)
     let cmds = parse $ lines script :: [StateT DrawMats IO ()]
-    runStateT (sequence_ cmds) (M.empty, T.ident, [])
+    runStateT (sequence_ cmds) emptyDM
 
 parse :: (MonadState DrawMats m, MonadIO m) => Args -> [m ()]
 parse []  = []
@@ -64,60 +71,67 @@ doublePts :: [a] -> [a]
 doublePts [] = []
 doublePts (x:xs) = x:x:(doublePts xs)
 
-box :: (MonadState DrawMats m) => Args -> m ()
-box args =
-    modify $ \(s, t, e) -> (s, t, e ++ pts)
-        where [cx, cy, cz, w, h, d] = map read args
-              pts = S.box cx cy cz w h d
-
-sphere :: (MonadState DrawMats m) => Args -> m ()
-sphere args =
-    modify $ \(s, t, e) -> (s, t, e ++ pts)
-        where [cx, cy, cz, r] = map read args
-              pts = doublePts $ S.sphere cx cy cz r
-    
-torus :: (MonadState DrawMats m) => Args -> m ()
-torus args =
-    modify $ \(s, t, e) -> (s, t, e ++ pts)
-        where [cx, cy, cz, r0, r1] = map read args
-              pts = doublePts $ S.torus cx cy cz r0 r1
+--box :: (MonadState DrawMats m) => Args -> m ()
+--box args =
+--    modify $ \(s, t, e) -> (s, t, e ++ pts)
+--        where [cx, cy, cz, w, h, d] = map read args
+--              pts = S.box cx cy cz w h d
+--
+--sphere :: (MonadState DrawMats m) => Args -> m ()
+--sphere args =
+--    modify $ \(s, t, e) -> (s, t, e ++ pts)
+--        where [cx, cy, cz, r] = map read args
+--              pts = doublePts $ S.sphere cx cy cz r
+--    
+--torus :: (MonadState DrawMats m) => Args -> m ()
+--torus args =
+--    modify $ \(s, t, e) -> (s, t, e ++ pts)
+--        where [cx, cy, cz, r0, r1] = map read args
+--              pts = doublePts $ S.torus cx cy cz r0 r1
 
 circle :: (MonadState DrawMats m) => Args -> m ()
-circle args =
-    modify $ \(s, t, e) -> (s, t, e ++ pts)
-        where [cx, cy, cz, r] = map read args
-              pts = connectPts $ T.circle cx cy cz r
+circle args = modify $ modEdges (++pts)
+    where [cx, cy, cz, r] = map read args
+          pts = connectPts $ T.circle cx cy cz r
 
 hermite :: (MonadState DrawMats m) => Args -> m ()
-hermite args = do
-    let (fX, fY) = T.genHermFxns args
-        pts = L.zipWith4 Vect (T.sampleParam 128 fX) (T.sampleParam 128 fY)
+hermite args = modify $ modEdges (++ (connectPts pts))
+    where (fX, fY) = T.genHermFxns args
+          pts = L.zipWith4 Vect (T.sampleParam 128 fX) (T.sampleParam 128 fY)
                        (repeat 0) (repeat 1)
-    modify $ \(s, t, e) -> (s, t,  e ++ (connectPts pts)) 
 
 bezier :: (MonadState DrawMats m) => Args -> m ()
-bezier args = do
-    let (fX, fY) = T.genBezFxns args
-        pts = L.zipWith4 Vect (T.sampleParam 128 fX) (T.sampleParam 128 fY)
+bezier args = modify $ modEdges (++ (connectPts pts))
+    where (fX, fY) = T.genBezFxns args
+          pts = L.zipWith4 Vect (T.sampleParam 128 fX) (T.sampleParam 128 fY)
                        (repeat 0) (repeat 1)
-    modify $ \(s, t, e) -> (s, t,  e ++ (connectPts pts)) 
+
+clean :: (MonadState DrawMats m) => m ()
+clean = modify . modScreen $ const M.empty
+
+draw :: (MonadState DrawMats m, MonadIO m) => m ()
+draw = do
+    dm <- get
+    modify $ modScreen $ (T.drawEdges red (getEdges dm))
 
 save :: (MonadState DrawMats m, MonadIO m) => Args -> m ()
 save args = do
     let path = head args
-    modify $ \(s, t, e) -> (T.drawEdges red e M.empty, t, e)
-    (scrn, _, _) <- get
+    clean
+    draw
+    dm <- get
     liftIO $ do
-        writeFile ".tempimg.ppm" (printPixels (500, 500) scrn)
+        writeFile ".tempimg.ppm" (printPixels (500, 500) (getScreen dm))
         callProcess "convert" [".tempimg.ppm", path]
         removeFile ".tempimg.ppm"
 
 display :: (MonadState DrawMats m, MonadIO m) => m ()
 display = do
-    modify $ \(s, t, e) -> (T.drawEdges red e M.empty, t, e)
-    (scrn, _, _) <- get
+    clean
+    draw
+    dm <- get
     liftIO $ do
-        writeFile ".tempimg.ppm" (printPixels (500, 500) scrn)
+        writeFile ".tempimg.ppm" (printPixels (500, 500) (getScreen dm))
         callProcess "eog" [".tempimg.ppm"]
         removeFile ".tempimg.ppm"
 --      (tempName, tempHandle) <- openTempFile "." "disp.ppm"
@@ -128,23 +142,19 @@ display = do
 --              god damn why doesn't this work
 
 line :: (MonadState DrawMats m) => Args -> m ()
-line args = do
-    let [x0, y0, z0, x1, y1, z1] = map read args
-        ln = Line (Vect x0 y0 z0 1) (Vect x1 y1 z1 1)
-            in modify $ \(s, t, edges) -> (s, t, addLine ln edges)
+line args = modify . modEdges $ addLine ln
+    where [x0, y0, z0, x1, y1, z1] = map read args
+          ln = Line (Vect x0 y0 z0 1) (Vect x1 y1 z1 1)
 
 ident :: (MonadState DrawMats m) => m ()
-ident = modify $
-    \(s, _, es) -> (s, T.ident, es)
+ident = modify . modTransform $ const T.ident
 
 scale :: (MonadState DrawMats m) => Args -> m ()
-scale args = modify $
-    \(scrn, tform, edges) -> (scrn, tform `mappend` T.scale x y z, edges)
+scale args = modify . modTransform $ (`mappend` T.scale x y z)
     where [x, y, z] = map read args
 
 rote :: (MonadState DrawMats m) => Args -> m ()
-rote s = modify $
-    \(scrn, tform, edges) -> (scrn, tform `mappend` roti s, edges)
+rote s = modify . modTransform $ (`mappend` roti s)
     where roti args
             | axis == "x"   = T.rotX theta
             | axis == "y"   = T.rotY theta
@@ -153,17 +163,16 @@ rote s = modify $
                   theta = read $ args !! 1
 
 move :: (MonadState DrawMats m) => Args -> m ()
-move args = modify $
-    \(scrn, tform, edges) -> (scrn, tform `mappend` T.trans x y z, edges)
+move args = modify . modTransform $ (`mappend` T.trans x y z)
     where [x, y, z] = map read args
 
 clear :: (MonadState DrawMats m) => m ()
-clear = modify $
-    \(scrn, tform, _) -> (scrn, tform, [])
+clear = modify . modEdges $ const []
 
 apply :: (MonadState DrawMats m) => m ()
-apply = modify $
-    \(scrn, tform, edges) -> (scrn, tform, T.mmult tform edges)
+apply = do
+    dm <- get
+    modify . modEdges $ T.mmult (getTransform dm)
 
 modScreen :: (Screen -> Screen) -> DrawMats -> DrawMats
 modScreen f dm = dm { getScreen = (f $ getScreen dm) }
@@ -173,7 +182,7 @@ modTransform :: (T.Transform Double -> T.Transform Double) ->
 modTransform f dm = dm { getTransform = (f $ getTransform dm) }
 
 modEdges :: ([Vect Double] -> [Vect Double]) -> DrawMats -> DrawMats
-modedges f dm = dm { getEdges = (f $ getEdges dm) }
+modEdges f dm = dm { getEdges = (f $ getEdges dm) }
 
 modTriangles :: ([S.Triangle Double] -> [S.Triangle Double]) ->
     DrawMats -> DrawMats
