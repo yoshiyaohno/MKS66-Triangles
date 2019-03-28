@@ -1,6 +1,6 @@
 *.ppm
 *.png
-Parse
+Main
 
 dist
 dist-*
