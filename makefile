@@ -1,11 +1,11 @@
-main: Parse.hs Transform.hs Line.hs
-	ghc -dynamic -O2 Parse.hs
+main: Main.hs Parse.hs Transform.hs Line.hs Solids.hs
+	ghc -dynamic -O -O2 Main.hs
 
 clean:
-	rm *.hi *.o Parse *.ppm *.png
+	rm *.hi *.o Main *.ppm *.png
 
 imgclean:
 	rm *.ppm *.png
 
 run:
-	./Parse script
+	./Main script

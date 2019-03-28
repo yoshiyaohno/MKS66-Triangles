@@ -6,6 +6,16 @@ import qualified Data.List as L
 
 newtype Triangle a = Triangle (Vect a, Vect a, Vect a)
 
+instance Functor Triangle where
+    fmap f (Triangle (a, b, c)) = Triangle (fmap f a, fmap f b, fmap f c)
+
+toEdges :: Triangle a -> [Line a]
+toEdges (Triangle (a, b, c)) = [Line a b, Line b c, Line a c]
+
+drawTriangles :: Color -> [Triangle Double] -> DrawAction
+drawTriangles c = mconcat . concat
+                    . map (map (drawLine c) . toEdges . fmap round)
+
 -- these four points go clockwise to face the normal into you
 stitch4 :: Vect t -> Vect t -> Vect t -> Vect t -> [Triangle t]
 stitch4 a b c d = [Triangle (a, b, c), Triangle (a, c, d)]
