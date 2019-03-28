@@ -1,4 +1,6 @@
 {-# LANGUAGE FlexibleContexts #-}
+module Parse where
+
 import Line
 import qualified Solids as S
 import qualified Transform as T
@@ -44,14 +46,8 @@ wArgs = [ ("save", save)
         , ("circle", circle)
 --      , ("sphere", sphere)
 --      , ("torus", torus)
---      , ("box", box)
+        , ("box", box)
         ]
-
-main = do
-    args <- getArgs
-    script <- readFile (head args)
-    let cmds = parse $ lines script :: [StateT DrawMats IO ()]
-    runStateT (sequence_ cmds) emptyDM
 
 parse :: (MonadState DrawMats m, MonadIO m) => Args -> [m ()]
 parse []  = []
@@ -71,12 +67,11 @@ doublePts :: [a] -> [a]
 doublePts [] = []
 doublePts (x:xs) = x:x:(doublePts xs)
 
---box :: (MonadState DrawMats m) => Args -> m ()
---box args =
---    modify $ \(s, t, e) -> (s, t, e ++ pts)
---        where [cx, cy, cz, w, h, d] = map read args
---              pts = S.box cx cy cz w h d
---
+box :: (MonadState DrawMats m) => Args -> m ()
+box args = modify $ modTriangles (++pts)
+    where [cx, cy, cz, w, h, d] = map read args
+          pts = S.box cx cy cz w h d
+
 --sphere :: (MonadState DrawMats m) => Args -> m ()
 --sphere args =
 --    modify $ \(s, t, e) -> (s, t, e ++ pts)
@@ -113,6 +108,7 @@ draw :: (MonadState DrawMats m, MonadIO m) => m ()
 draw = do
     dm <- get
     modify $ modScreen $ (T.drawEdges red (getEdges dm))
+    modify $ modScreen $ (S.drawTriangles red (getTriangles dm))
 
 save :: (MonadState DrawMats m, MonadIO m) => Args -> m ()
 save args = do
