@@ -44,8 +44,8 @@ wArgs = [ ("save", save)
         , ("hermite", hermite)
         , ("bezier", bezier)
         , ("circle", circle)
---      , ("sphere", sphere)
---      , ("torus", torus)
+        , ("sphere", sphere)
+        , ("torus", torus)
         , ("box", box)
         ]
 
@@ -68,21 +68,19 @@ doublePts [] = []
 doublePts (x:xs) = x:x:(doublePts xs)
 
 box :: (MonadState DrawMats m) => Args -> m ()
-box args = modify $ modTriangles (++pts)
+box args = modify $ modTriangles (++tris)
     where [cx, cy, cz, w, h, d] = map read args
-          pts = S.box cx cy cz w h d
+          tris = S.box cx cy cz w h d
 
---sphere :: (MonadState DrawMats m) => Args -> m ()
---sphere args =
---    modify $ \(s, t, e) -> (s, t, e ++ pts)
---        where [cx, cy, cz, r] = map read args
---              pts = doublePts $ S.sphere cx cy cz r
---    
---torus :: (MonadState DrawMats m) => Args -> m ()
---torus args =
---    modify $ \(s, t, e) -> (s, t, e ++ pts)
---        where [cx, cy, cz, r0, r1] = map read args
---              pts = doublePts $ S.torus cx cy cz r0 r1
+sphere :: (MonadState DrawMats m) => Args -> m ()
+sphere args = modify $ modTriangles (++tris)
+    where [cx, cy, cz, r] = map read args
+          tris = S.sphere cx cy cz r
+    
+torus :: (MonadState DrawMats m) => Args -> m ()
+torus args = modify $ modTriangles (++tris)
+        where [cx, cy, cz, r0, r1] = map read args
+              tris = S.torus cx cy cz r0 r1
 
 circle :: (MonadState DrawMats m) => Args -> m ()
 circle args = modify $ modEdges (++pts)

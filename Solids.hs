@@ -43,12 +43,13 @@ box cx cy cz w h d = let
 sphere :: (Floating a, Enum a) => a -> a -> a -> a -> [Triangle a]
 sphere cx cy cz r = concat $ zipWith stitchLines arcs (rotate 1 arcs)
     where arcs = [[Vect (cx + r * cos thet) (cy + r * sin thet * cos phi)
-                (cz + r * sin thet * sin phi) 1
-                    | thet <- [0, 0.06 .. pi]] |  phi <- [0, 0.09 .. 2*pi]]
+                 (cz + r * sin thet * sin phi) 1
+                    | thet <- [0, pi/12 .. pi]] |  phi <- [0, pi/6 .. 2*pi]]
 
-torus :: (Floating a, Enum a) => a -> a -> a -> a -> a -> [Vect a]
-torus cx cy cz r0 r1 =
-    [Vect (cx + r0 * cos thet * cos phi + r1 * cos phi) (cy + r0 * sin thet)
-          (cz - sin phi * (r0 * cos thet + r1)) 1
-            | thet <- [0, 0.09 .. 2*pi], phi <- [0, 0.09 .. 2*pi]]
+torus :: (Floating a, Enum a) => a -> a -> a -> a -> a -> [Triangle a]
+torus cx cy cz r0 r1 = concat $ zipWith stitchLines arcs (rotate 1 arcs)
+    where arcs = [[Vect (cx + r0 * cos thet * cos phi + r1 * cos phi)
+                  (cy + r0 * sin thet)
+                  (cz - sin phi * (r0 * cos thet + r1)) 1
+                    | thet <- [0, pi/6 .. 2*pi]] | phi <- [0, pi/6 .. 2*pi]]
 
