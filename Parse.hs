@@ -110,6 +110,12 @@ draw = do
     modify $ modScreen $ (T.drawEdges red (getEdges dm))
     modify $ modScreen $ (S.drawTriangles red (getTriangles dm))
 
+apply :: (MonadState DrawMats m) => m ()
+apply = do
+    dm <- get
+    modify . modEdges $ T.mmult (getTransform dm)
+    modify . modTriangles $ map (S.trTriangle $ getTransform dm)
+
 save :: (MonadState DrawMats m, MonadIO m) => Args -> m ()
 save args = do
     let path = head args
@@ -164,11 +170,6 @@ move args = modify . modTransform $ (`mappend` T.trans x y z)
 
 clear :: (MonadState DrawMats m) => m ()
 clear = modify . modEdges $ const []
-
-apply :: (MonadState DrawMats m) => m ()
-apply = do
-    dm <- get
-    modify . modEdges $ T.mmult (getTransform dm)
 
 modScreen :: (Screen -> Screen) -> DrawMats -> DrawMats
 modScreen f dm = dm { getScreen = (f $ getScreen dm) }
