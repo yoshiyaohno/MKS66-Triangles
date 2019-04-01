@@ -10,22 +10,30 @@ toEdges :: Triangle a -> [Line a]
 toEdges (Triangle (a, b, c)) = [Line a b, Line b c, Line a c]
 
 drawTriangles :: Color -> [Triangle Double] -> DrawAction
-drawTriangles c = mconcat . map (drawLine c . fmap round) . concat . map toEdges
+drawTriangles c = mconcat . map (drawLine c . fmap round)
+                    . concat . map toEdges . bfCull
+
+bfCull :: (Num a, Ord a) => [Triangle a] -> [Triangle a]
+bfCull = filter ((>0) . getZ . normal)
+
+normal :: (Num a) => Triangle a -> Vect a
+normal (Triangle (a, b, c)) = crossProd ((-) <$> c <*> a) ((-) <$> b <*> a)
 
 trTriangle :: (Num a) => Transform a -> Triangle a -> Triangle a
 trTriangle t (Triangle (a, b, c)) = Triangle (pmult t a, pmult t b, pmult t c)
 
-stitchLines :: [Vect a] -> [Vect a] -> [Triangle a]
-stitchLines [] _   = []
-stitchLines _ []   = []
-stitchLines _ [b0] = []
-stitchLines [a0] _ = []
-stitchLines (a0:a1:as) (b0:b1:bs) =
-    (stitch4 a1 a0 b0 b1) ++ (stitchLines (a1:as) (b1:bs))
+sphere :: (Floating a, Enum a) => a -> a -> a -> a -> [Triangle a]
+sphere cx cy cz r = concat $ zipWith stitchLines arcs (rotate 1 arcs)
+    where arcs = [[Vect (cx + r * cos thet) (cy + r * sin thet * cos phi)
+                 (cz + r * sin thet * sin phi) 1
+                    | thet <- [0, pi/12 .. pi]] |  phi <- [0, pi/6 .. 2*pi]]
 
--- these four points go clockwise to face the normal into you
-stitch4 :: Vect t -> Vect t -> Vect t -> Vect t -> [Triangle t]
-stitch4 a b c d = [Triangle (a, b, c), Triangle (a, c, d)]
+torus :: (Floating a, Enum a) => a -> a -> a -> a -> a -> [Triangle a]
+torus cx cy cz r0 r1 = concat $ zipWith stitchLines arcs (rotate 1 arcs)
+    where arcs = [[Vect (cx + r0 * cos thet * cos phi + r1 * cos phi)
+                  (cy + r0 * sin thet)
+                  (cz - sin phi * (r0 * cos thet + r1)) 1
+                    | thet <- [0, pi/6 .. 2*pi]] | phi <- [0, pi/6 .. 2*pi]]
 
 box :: (Floating a, Enum a) => a -> a -> a -> a -> a -> a -> [Triangle a]
 box cx cy cz w h d = let
@@ -40,16 +48,15 @@ box cx cy cz w h d = let
                    ++ stitch4 p000 p100 p101 p001
     -- y a h o o
 
-sphere :: (Floating a, Enum a) => a -> a -> a -> a -> [Triangle a]
-sphere cx cy cz r = concat $ zipWith stitchLines arcs (rotate 1 arcs)
-    where arcs = [[Vect (cx + r * cos thet) (cy + r * sin thet * cos phi)
-                 (cz + r * sin thet * sin phi) 1
-                    | thet <- [0, pi/12 .. pi]] |  phi <- [0, pi/6 .. 2*pi]]
+stitchLines :: [Vect a] -> [Vect a] -> [Triangle a]
+stitchLines [] _   = []
+stitchLines _ []   = []
+stitchLines _ [b0] = []
+stitchLines [a0] _ = []
+stitchLines (a0:a1:as) (b0:b1:bs) =
+    (stitch4 a1 a0 b0 b1) ++ (stitchLines (a1:as) (b1:bs))
 
-torus :: (Floating a, Enum a) => a -> a -> a -> a -> a -> [Triangle a]
-torus cx cy cz r0 r1 = concat $ zipWith stitchLines arcs (rotate 1 arcs)
-    where arcs = [[Vect (cx + r0 * cos thet * cos phi + r1 * cos phi)
-                  (cy + r0 * sin thet)
-                  (cz - sin phi * (r0 * cos thet + r1)) 1
-                    | thet <- [0, pi/6 .. 2*pi]] | phi <- [0, pi/6 .. 2*pi]]
+-- these four points go clockwise to face the normal into you
+stitch4 :: Vect t -> Vect t -> Vect t -> Vect t -> [Triangle t]
+stitch4 a b c d = [Triangle (a, b, c), Triangle (a, c, d)]
 

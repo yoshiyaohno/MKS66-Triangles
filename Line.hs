@@ -46,6 +46,10 @@ instance Foldable Vect where
     foldr f acc (Vect x0 x1 x2 x3) =
         foldr f acc [x0, x1, x2, x3]
 
+crossProd :: (Num a) => Vect a -> Vect a -> Vect a
+crossProd (Vect x0 y0 z0 _) (Vect x1 y1 z1 _)
+    = (Vect (y0*z1 - z0*y1) (x0*z1 - x1*z0) (x0*y1 - y0*x1) 1)
+
 drawLine :: Color -> Line Int -> Screen -> Screen
 drawLine c ln = mconcat $ map (plotPt c) (rasterLine ln)
 
