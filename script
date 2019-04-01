@@ -1,90 +1,53 @@
-box
-100 100 -150 300 300 300
+sphere
+250 250 0 30
 ident
 move
 -250 -250 0
 rotate
-x 18
-move
-250 250 0
-apply
-display
-ident
-move
--250 -250 0
+x 7
 rotate
-y 20
+y 2
+rotate
+z 1
+scale
+1.2 1.2 1.2
 move
 250 250 0
+display
 apply
 display
-save
-frame00.png
 apply
 display
-save
-frame01.png
 apply
 display
-save
-frame02.png
 apply
 display
-save
-frame03.png
 apply
 display
-save
-frame04.png
 apply
 display
-save
-frame05.png
 apply
 display
-save
-frame06.png
 apply
 display
-save
-frame07.png
 apply
 display
-save
-frame08.png
 apply
 display
-save
-frame09.png
 apply
 display
-save
-frame10.png
 apply
 display
-save
-frame11.png
 apply
 display
-save
-frame12.png
 apply
 display
-save
-frame13.png
 apply
 display
-save
-frame14.png
 apply
 display
-save
-frame15.png
 apply
 display
-save
-frame16.png
 apply
-display
 save
-frame17.png
+img.png
