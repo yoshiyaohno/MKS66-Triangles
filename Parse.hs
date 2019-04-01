@@ -22,7 +22,7 @@ data DrawMats =
              }
 
 emptyDM :: DrawMats
-emptyDM = DrawMats { getScreen = emptyScreen blk (500,500)
+emptyDM = DrawMats { getScreen = emptyScreen blk (499,499)
                    , getTransform = T.ident
                    , getEdges = []
                    , getTriangles = []
@@ -100,7 +100,7 @@ bezier args = modify $ modEdges (++ (connectPts pts))
                        (repeat 0) (repeat 1)
 
 clean :: (MonadState DrawMats m) => m ()
-clean = modify . modScreen $ const (emptyScreen blk (500,500))
+clean = modify . modScreen $ const (emptyScreen blk (499,499))
 
 draw :: (MonadState DrawMats m, MonadIO m) => m ()
 draw = do
@@ -135,7 +135,7 @@ display = do
         callProcess "eog" [".tempimg.ppm"]
         removeFile ".tempimg.ppm"
 --      (tempName, tempHandle) <- openTempFile "." "disp.ppm"
---      hPutStrLn tempHandle (printPixels (500, 500) scrn)
+--      hPutStrLn tempHandle (printPixels (499, 499) scrn)
 --      callProcess "eog" [tempName]
 --      hClose tempHandle 
 --      removeFile tempName
