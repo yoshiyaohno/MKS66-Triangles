@@ -76,13 +76,13 @@ toList = foldr (:) []
 -- takes a screen and puts in ppm format
 printPixels :: Screen -> String
 printPixels scrn =
-    ppmHeader (w1-w0+1, h1-h0+1)
-    ++ unwords [show $ scrn!(x, y) | x <- [w0..w1], y <- reverse [h0..h1]]
+    ppmHeader (w1-w0, h1-h0)
+    ++ unwords [show $ scrn!(x, y) | x <- [w0..w1-1], y <- reverse [h0..h1-1]]
         where ((w0,h0), (w1,h1)) = bounds scrn
        
  
 ppmHeader :: (Int, Int) -> String
-ppmHeader (w, h) = "P3 " ++ show w ++ " " ++ show h ++ " 255\n"
+ppmHeader (w, h) = "P3 " ++ show (w) ++ " " ++ show (h) ++ " 255\n"
 
 -- all (non-permuted) pairs of a list
 allPairs :: [a] -> [(a, a)]
