@@ -76,9 +76,9 @@ toList = foldr (:) []
 -- takes a screen and puts in ppm format
 printPixels :: Screen -> String
 printPixels scrn =
-    ppmHeader (w, h)
-    ++ unwords [show $ scrn!(x, y) | x <- [0..w], y <- reverse [0..h]]
-        where ((_,_), (w,h)) = bounds scrn
+    ppmHeader (w1-w0, h1-h0)
+    ++ unwords [show $ scrn!(x, y) | x <- [w0..w1], y <- reverse [h0..h1]]
+        where ((w0,h0), (w1,h1)) = bounds scrn
        
  
 ppmHeader :: (Int, Int) -> String

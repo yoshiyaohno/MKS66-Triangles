@@ -22,7 +22,7 @@ data DrawMats =
              }
 
 emptyDM :: DrawMats
-emptyDM = DrawMats { getScreen = M.empty
+emptyDM = DrawMats { getScreen = emptyScreen blk (500,500)
                    , getTransform = T.ident
                    , getEdges = []
                    , getTriangles = []
@@ -100,12 +100,12 @@ bezier args = modify $ modEdges (++ (connectPts pts))
                        (repeat 0) (repeat 1)
 
 clean :: (MonadState DrawMats m) => m ()
-clean = modify . modScreen $ const M.empty
+clean = modify . modScreen $ const (emptyScreen blk (500,500))
 
 draw :: (MonadState DrawMats m, MonadIO m) => m ()
 draw = do
     dm <- get
-    modify $ modScreen $ (T.drawEdges red (getEdges dm))
+    modify $ modScreen $ (drawEdges red (getEdges dm))
     modify $ modScreen $ (S.drawTriangles red (getTriangles dm))
 
 apply :: (MonadState DrawMats m) => m ()
@@ -121,7 +121,7 @@ save args = do
     draw
     dm <- get
     liftIO $ do
-        writeFile ".tempimg.ppm" (printPixels (500, 500) (getScreen dm))
+        writeFile ".tempimg.ppm" (printPixels $ getScreen dm)
         callProcess "convert" [".tempimg.ppm", path]
         removeFile ".tempimg.ppm"
 
@@ -131,7 +131,7 @@ display = do
     draw
     dm <- get
     liftIO $ do
-        writeFile ".tempimg.ppm" (printPixels (500, 500) (getScreen dm))
+        writeFile ".tempimg.ppm" (printPixels $ getScreen dm)
         callProcess "eog" [".tempimg.ppm"]
         removeFile ".tempimg.ppm"
 --      (tempName, tempHandle) <- openTempFile "." "disp.ppm"
