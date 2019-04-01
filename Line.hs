@@ -54,6 +54,10 @@ crossProd (Vect x0 y0 z0 _) (Vect x1 y1 z1 _)
 drawLine :: Color -> Line Int -> Screen -> Screen
 drawLine c ln = (// [((getX px, getY px), c) | px <- rasterLine ln])
 
+drawEdges :: (RealFrac a) => Color -> [Vect a] -> Screen -> Screen
+drawEdges c =
+    foldr (.) id . map (drawLine c . uncurry Line) . pairOff . (map.fmap) round 
+
 addLine :: Line a -> [Vect a] -> [Vect a]
 addLine (Line p0 p1) = ([p0, p1] ++)
 
