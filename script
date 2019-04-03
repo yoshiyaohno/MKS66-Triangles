@@ -1,3 +1,11 @@
+box
+200 200 -25 50 50 50
+box
+300 300 -25 50 50 50
+torus
+200 300 0 10 50
+torus
+300 200 0 10 50
 sphere
 250 250 0 30
 ident
@@ -10,7 +18,7 @@ y 2
 rotate
 z 1
 scale
-1.2 1.2 1.2
+1.2 1.5 0.8
 move
 250 250 0
 display
@@ -27,5 +35,10 @@ display
 apply
 display
 apply
+display
+apply
+display
+apply
+display
 save
 img.png
