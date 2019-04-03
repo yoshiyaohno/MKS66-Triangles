@@ -1,12 +1,9 @@
-{-# LANGUAGE BinaryLiterals #-}
 module Line where
 
-import Data.Bits
-import Data.Int
-import Data.Array.Unboxed
+import Screen
+import Data.Array.Unboxed --hmm
 import Control.Applicative
-import qualified Data.List       as L
-import qualified Data.Map.Strict as M
+import qualified Data.List as L
 
 data Line a = Line (Vect a) (Vect a) deriving (Show)
 data Vect a = Vect { getX::a
@@ -14,15 +11,6 @@ data Vect a = Vect { getX::a
                    , getZ::a
                    , getQ::a
                    } deriving (Eq, Ord)
-
-type Screen = UArray (Int, Int) Int32
-type DrawAction = Screen -> Screen
-type Color = Int32
-
-blk = color 0 0 0
-red = color 255 0 0
-blu = color 0 0 255
-grn = color 0 255 0
 
 instance (Show t) => Show (Vect t) where
     show (Vect x y z q) = "("
@@ -47,25 +35,6 @@ instance Foldable Vect where
     foldr f acc (Vect x0 x1 x2 x3) =
         foldr f acc [x0, x1, x2, x3]
 
-showC :: Color -> String
-showC = unwords . map show . ([getR, getG, getB] <*>) . pure
-
-color :: Color -> Color -> Color -> Color
-{-# INLINE color #-}
-color r g b = r `shiftL` 16 + g `shiftL` 8 + b
-
-getR :: Color -> Color
-{-# INLINE getR #-}
-getR = (`shiftR` 16)
-
-getG :: Color -> Color
-{-# INLINE getG #-}
-getG = ((.&.) 0b11111111) . (`shiftR` 8)
-
-getB :: Color -> Color
-{-# INLINE getB #-}
-getB = (.&. 0b11111111)
-
 crossProd :: (Num a) => Vect a -> Vect a -> Vect a
 crossProd (Vect x0 y0 z0 _) (Vect x1 y1 z1 _)
     = (Vect (y0*z1 - z0*y1) (x0*z1 - x1*z0) (x0*y1 - y0*x1) 1)
@@ -87,24 +56,8 @@ connectPts [] = []
 connectPts [x] = []
 connectPts (a:b:xs) = a:b:(connectPts $ b:xs)
 
-emptyScreen :: Color -> (Int, Int) -> Screen
-emptyScreen c (w,h) =
-    array ((0,0), (w,h)) [((x,y), c) | x <- [0..w], y <- [0..h]]
-
 toList :: Vect a -> [a]
 toList = foldr (:) []
-
--- takes a screen and puts in ppm format
-printPixels :: Screen -> String
-printPixels scrn =
-    ppmHeader (w1-w0, h1-h0)
-    ++ (unlines . (map unwords) $
-        [[showC $ scrn!(x, y) | x <- [w0..w1-1]] | y <- reverse [h0..h1-1]])
-            where ((w0,h0), (w1,h1)) = bounds scrn
-       
- 
-ppmHeader :: (Int, Int) -> String
-ppmHeader (w, h) = "P3 " ++ show (w) ++ " " ++ show (h) ++ " 255\n"
 
 -- all (non-permuted) pairs of a list
 allPairs :: [a] -> [(a, a)]
@@ -147,3 +100,4 @@ _rLy (Line (Vect x0 y0 _ _) (Vect x1 y1 _ _)) =
     where   xs = map ((+x0) . (`quot` (2* abs dy))) . tail $ [negate dx, dx..]
             dy = y1 - y0
             dx = x1 - x0
+

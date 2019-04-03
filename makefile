@@ -1,7 +1,7 @@
 default: Main
 	./Main script
 
-Main: Main.hs Parse.hs Transform.hs Line.hs Solids.hs
+Main: Main.hs Parse.hs Transform.hs Line.hs Solids.hs Screen.hs
 	ghc -dynamic -O -O2 Main.hs
 
 build: Main

@@ -2,6 +2,7 @@
 module Parse where
 
 import Line
+import Screen
 import qualified Solids as S
 import qualified Transform as T
 

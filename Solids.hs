@@ -1,6 +1,7 @@
 module Solids where
 
 import Line
+import Screen
 import Transform
 import qualified Data.List as L
 
@@ -9,7 +10,7 @@ newtype Triangle a = Triangle (Vect a, Vect a, Vect a) deriving (Show, Eq)
 toEdges :: Triangle a -> [Line a]
 toEdges (Triangle (a, b, c)) = [Line a b, Line b c, Line a c]
 
-drawTriangles :: Color -> [Triangle Double] -> DrawAction
+drawTriangles :: Color -> [Triangle Double] -> Screen -> Screen
 drawTriangles c =
     foldr (.) id . map (drawLine c . fmap round) . concat . map toEdges . bfCull
 
