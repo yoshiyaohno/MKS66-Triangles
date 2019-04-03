@@ -10,8 +10,8 @@ toEdges :: Triangle a -> [Line a]
 toEdges (Triangle (a, b, c)) = [Line a b, Line b c, Line a c]
 
 drawTriangles :: Color -> [Triangle Double] -> DrawAction
-drawTriangles c = mconcat . map (drawLine c . fmap round)
-                    . concat . map toEdges . bfCull
+drawTriangles c =
+    foldr (.) id . map (drawLine c . fmap round) . concat . map toEdges . bfCull
 
 bfCull :: (Num a, Ord a) => [Triangle a] -> [Triangle a]
 bfCull = filter ((>0) . getZ . normal)

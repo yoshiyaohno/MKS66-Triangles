@@ -1,6 +1,10 @@
+{-# LANGUAGE BinaryLiterals #-}
 module Line where
 
-import           Control.Applicative
+import Data.Bits
+import Data.Int
+import Data.Array.Unboxed
+import Control.Applicative
 import qualified Data.List       as L
 import qualified Data.Map.Strict as M
 
@@ -10,15 +14,15 @@ data Vect a = Vect { getX::a
                    , getZ::a
                    , getQ::a
                    } deriving (Eq, Ord)
-data Color  = Color {getR::Int, getG::Int, getB::Int}
 
-type Screen = M.Map (Int, Int) Color
+type Screen = UArray (Int, Int) Int32
 type DrawAction = Screen -> Screen
+type Color = Int32
 
-blk = Color 0 0 0
-red = Color 255 0 0
-blu = Color 0 0 255
-grn = Color 0 255 0
+blk = color 0 0 0
+red = color 255 0 0
+blu = color 0 0 255
+grn = color 0 255 0
 
 instance (Show t) => Show (Vect t) where
     show (Vect x y z q) = "("
@@ -27,9 +31,6 @@ instance (Show t) => Show (Vect t) where
                             ++ show z ++ ", "
                             ++ show q
                             ++ ")"
-
-instance Show Color where
-    show = unwords . map show . ([getR, getG, getB] <*>) . pure
 
 instance Functor Line where
     fmap f (Line p0 p1) = Line (fmap f p0) (fmap f p1)
@@ -46,15 +47,37 @@ instance Foldable Vect where
     foldr f acc (Vect x0 x1 x2 x3) =
         foldr f acc [x0, x1, x2, x3]
 
+showC :: Color -> String
+showC = unwords . map show . ([getR, getG, getB] <*>) . pure
+
+color :: Color -> Color -> Color -> Color
+{-# INLINE color #-}
+color r g b = r `shiftL` 16 + g `shiftL` 8 + b
+
+getR :: Color -> Color
+{-# INLINE getR #-}
+getR = (`shiftR` 16)
+
+getG :: Color -> Color
+{-# INLINE getG #-}
+getG = ((.&.) 0b11111111) . (`shiftR` 8)
+
+getB :: Color -> Color
+{-# INLINE getB #-}
+getB = (.&. 0b11111111)
+
 crossProd :: (Num a) => Vect a -> Vect a -> Vect a
 crossProd (Vect x0 y0 z0 _) (Vect x1 y1 z1 _)
     = (Vect (y0*z1 - z0*y1) (x0*z1 - x1*z0) (x0*y1 - y0*x1) 1)
 
 drawLine :: Color -> Line Int -> Screen -> Screen
-drawLine c ln = mconcat $ map (plotPt c) (rasterLine ln)
+drawLine c ln s = s // (zip
+    (filter (inRange $ bounds s) [(getX px, getY px) | px <- rasterLine ln])
+    (repeat c))
 
-plotPt :: Color -> Vect Int -> Screen -> Screen
-plotPt c (Vect x y _ _) = M.insert (x, y) c
+drawEdges :: (RealFrac a) => Color -> [Vect a] -> Screen -> Screen
+drawEdges c =
+    foldr (.) id . map (drawLine c . uncurry Line) . pairOff . (map.fmap) round 
 
 addLine :: Line a -> [Vect a] -> [Vect a]
 addLine (Line p0 p1) = ([p0, p1] ++)
@@ -64,20 +87,24 @@ connectPts [] = []
 connectPts [x] = []
 connectPts (a:b:xs) = a:b:(connectPts $ b:xs)
 
+emptyScreen :: Color -> (Int, Int) -> Screen
+emptyScreen c (w,h) =
+    array ((0,0), (w,h)) [((x,y), c) | x <- [0..w], y <- [0..h]]
+
 toList :: Vect a -> [a]
 toList = foldr (:) []
 
--- takes bounds and a screen and puts in ppm format
-printPixels :: (Int, Int) -> Screen -> String
-printPixels (w, h) pxs =
-    ppmHeader (w, h)
-    ++ (unlines . map unwords $ [[show . f $ M.lookup (x, y) pxs
-                | x <- [0..w-1]] | y <- (reverse [0..h-1])])
-    where   f Nothing  = Color 0 0 0
-            f (Just c) = c 
+-- takes a screen and puts in ppm format
+printPixels :: Screen -> String
+printPixels scrn =
+    ppmHeader (w1-w0, h1-h0)
+    ++ (unlines . (map unwords) $
+        [[showC $ scrn!(x, y) | x <- [w0..w1-1]] | y <- reverse [h0..h1-1]])
+            where ((w0,h0), (w1,h1)) = bounds scrn
+       
  
 ppmHeader :: (Int, Int) -> String
-ppmHeader (w, h) = "P3 " ++ show w ++ " " ++ show h ++ " 255\n"
+ppmHeader (w, h) = "P3 " ++ show (w) ++ " " ++ show (h) ++ " 255\n"
 
 -- all (non-permuted) pairs of a list
 allPairs :: [a] -> [(a, a)]

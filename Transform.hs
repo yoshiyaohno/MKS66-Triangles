@@ -113,10 +113,6 @@ transpose (Transform (Vect (Vect a b c d) (Vect e f g h)
             Transform $ Vect (Vect a e i m) (Vect b f j n)
                 (Vect c g k o) (Vect d h l p)
 
-drawEdges :: (RealFrac a) => Color -> [Vect a] -> Screen -> Screen
-drawEdges c edges = mconcat . map (drawLine c . uncurry Line) $ (pairOff redges)
-    where redges = map (fmap round) edges
-
 comp :: (Num a) => Transform a -> Transform a -> Transform a
 comp t = Transform . mmult (transpose t) . getVV
 
