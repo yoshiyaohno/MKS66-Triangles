@@ -71,7 +71,9 @@ crossProd (Vect x0 y0 z0 _) (Vect x1 y1 z1 _)
     = (Vect (y0*z1 - z0*y1) (x0*z1 - x1*z0) (x0*y1 - y0*x1) 1)
 
 drawLine :: Color -> Line Int -> Screen -> Screen
-drawLine c ln = (// [((getX px, getY px), c) | px <- rasterLine ln])
+drawLine c ln s = s // (zip
+    (filter (inRange $ bounds s) [(getX px, getY px) | px <- rasterLine ln])
+    (repeat c))
 
 drawEdges :: (RealFrac a) => Color -> [Vect a] -> Screen -> Screen
 drawEdges c =
